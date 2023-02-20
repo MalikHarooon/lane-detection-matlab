@@ -1,0 +1,70 @@
+function [xy,linecentre,centre,error,ld,rd] = fcn(u)
+%#codegen
+error=0;ld=0;rd=0;
+linecentre=[0 0]; c1=[0 0];c2=[0 0];f1=[0 0 0 0];f2=[0 0 0 0];
+[H,T,R] = hough(u);
+P  = houghpeaks(H,20,'threshold',1);
+lines = houghlines(u,T,R,P,'FillGap',500,'MinLength',40);
+a=0;b=0;xy=[0 0 0 0;0 0 0 0];xy1=[0 0 0 0];xy2=[0 0 0 0];
+centre=[640 500];
+
+for k = 1:length(lines)
+    temp=lines(k).point1(1)-lines(k).point2(1)  %to get rid of vertical lines
+    if(temp>100 || temp<-100)
+    coefficients = polyfit([lines(k).point1(1), lines(k).point2(1)], [lines(k).point1(2), lines(k).point2(2)], 1);
+    a = coefficients (1);
+    b = coefficients (2);  
+     %For adjusting height of points to centre of frame
+        if (lines(k).point1(2)<400)  
+            lines(k).point1(1) = (500 - b)/a   ;  
+            lines(k).point1(2) = 500;
+            lines(k).point2(1) = (720-b)/a;
+            lines(k).point2(2) = (720)
+                if (b>720)
+                xy1 = [lines(k).point1 lines(k).point2];
+                end
+                if((720-b)/a>640 && (720-b)/a<1300)
+                xy2 = [lines(k).point1 lines(k).point2];
+                end
+        elseif (lines(k).point2(2)<400)
+            lines(k).point2(1)=(500 - b)/a ;
+            lines(k).point2(2)=500;
+            lines(k).point1(1) = (720-b)/a;
+            lines(k).point1(2) = (720)
+                if (b>720&& (temp>80 || temp<-80))
+                xy1 = [lines(k).point1 lines(k).point2];
+                end
+                if((720-b)/a>640 && (720-b)/a<1700)
+                xy2 = [lines(k).point1 lines(k).point2];
+                end
+        end
+    end
+     xy=[xy1;xy2];
+   
+    if(xy1(2)==500)
+        c1=[xy1(1) xy1(2)];
+    else
+        c1=[xy1(3) xy1(4)];
+    end
+   
+    if(xy2(2)==500)
+        c2=[xy2(1) xy2(2)];
+    else
+        c2=[xy2(3) xy2(4)];
+    end
+   
+
+end
+
+    %Plotting centre point
+    if(c1(1)~=0 && c2(1)~=0 && c2(1)~=c1(1))
+    linecentre=[(c1(1)+c2(1))/2 (c1(2)+c2(2))/2];
+    error=centre(1)-linecentre(1);
+    end
+   
+   
+%Lane departure warning ke lye hum log dono line ke equations use krskte
+%hen aur wo istrha ke equations ke base point pr 'x' values ko use krna ha
+
+    %To get rid of diasppearing one lane while other is still there then we
+    %will use previous lane
